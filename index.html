@@ -129,6 +129,19 @@ body::before {
   color: var(--cream);
 }
 .lock-venue-desc { font-family: var(--font-body); font-size: 11px; color: var(--cream-dim); margin-top: 1px; }
+.lock-admin-btn {
+  width: 100%; margin-top: 4px;
+  background: none; border: 1px solid var(--iron);
+  border-radius: var(--radius); padding: 8px 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: var(--transition);
+}
+.lock-admin-btn:hover { border-color: var(--iron-light); }
+.lock-admin-btn-label {
+  font-family: var(--font-head); font-size: 11px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--iron-light);
+}
+.lock-admin-btn:hover .lock-admin-btn-label { color: var(--cream-dim); }
 .pin-area { display: none; margin-top: 4px; }
 .pin-area.visible { display: block; }
 .pin-display { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; }
@@ -860,6 +873,21 @@ function renderLockVenues() {
     btn.onclick = () => selectLockVenue(mode);
     container.appendChild(btn);
   });
+  // Admin button always at the bottom
+  const adminBtn = document.createElement('button');
+  adminBtn.className = 'lock-admin-btn';
+  adminBtn.innerHTML = `<span style="font-size:13px;color:var(--iron-light);">⚙</span><span class="lock-admin-btn-label">Admin</span>`;
+  adminBtn.onclick = () => selectAdminLogin();
+  container.appendChild(adminBtn);
+}
+
+function selectAdminLogin() {
+  selectedVenue = 'admin';
+  document.getElementById('lock-venues').style.display = 'none';
+  document.getElementById('pin-area').classList.add('visible');
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
 }
 
 function selectLockVenue(mode) {
@@ -892,6 +920,19 @@ function updatePinDots() {
 }
 function checkPin() {
   const adminPin = CONFIG.pins.admin || '1234';
+  // Admin login path — only accept admin PIN
+  if (selectedVenue === 'admin') {
+    if (pinBuffer === adminPin) {
+      const firstActive = ['outpost','venue','mule'].find(m => CONFIG.activeLocations[m]) || 'outpost';
+      unlock(firstActive, true);
+    } else {
+      document.getElementById('pin-error').textContent = 'Incorrect PIN';
+      pinBuffer = '';
+      updatePinDots();
+    }
+    return;
+  }
+  // Venue login — admin PIN also works here
   if (pinBuffer === adminPin) { unlock(selectedVenue, true); return; }
   const venuePin = CONFIG.pins[selectedVenue];
   if (!venuePin || pinBuffer === venuePin) { unlock(selectedVenue, false); return; }
