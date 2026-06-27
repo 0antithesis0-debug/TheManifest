@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Manifest — Iron & Embers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root {
+  --coal: #0F0B08;
+  --coal-mid: #1A1410;
+  --coal-light: #2A1E16;
+  --iron: #3D3530;
+  --iron-light: #5a4a42;
+  --ember: #C85A1A;
+  --ember-dark: #9e4412;
+  --rust: #8B4513;
+  --gold: #C9921A;
+  --gold-dim: #8a6014;
+  --cream: #E8D5B0;
+  --cream-dim: #A89070;
+  --white: #F5EDE0;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-head: 'Barlow Condensed', sans-serif;
+  --font-body: 'Barlow', sans-serif;
+  --radius: 6px;
+  --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+  /* scale — override per breakpoint */
+  --scale: 1;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--coal);
+  color: var(--white);
+  font-family: var(--font-body);
+  font-size: calc(15px * var(--scale));
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* noise texture */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.6;
+}
+
+/* ──────────────────────────────────────────────────
+   LOCK SCREEN
+────────────────────────────────────────────────── */
+#lock-screen {
+  position: fixed; inset: 0; z-index: 9000;
+  background: var(--coal);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0;
+}
+
+#lock-screen.hidden { display: none; }
+
+.lock-logo {
+  font-family: var(--font-display);
+  font-size: 32px; font-weight: 700;
+  color: var(--cream); letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.lock-logo span { color: var(--ember); }
+
+.lock-tagline {
+  font-family: var(--font-head);
+  font-size: 10px; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--cream-dim);
+  margin-bottom: 36px;
+}
+
+.lock-card {
+  background: var(--coal-mid);
+  border: 1px solid var(--iron);
+  border-radius: 12px;
+  padding: 28px 32px 24px;
+  width: min(340px, 90vw);
+  text-align: center;
+}
+
+.lock-title {
+  font-family: var(--font-head);
+  font-size: 11px; letter-spacing: 2.5px;
+  text-transform: uppercase; color: var(--ember);
+  margin-bottom: 6px;
+}
+
+.lock-subtitle {
+  font-family: var(--font-body);
+  font-size: 13px; color: var(--cream-dim);
+  margin-bottom: 22px;
+}
+
+/* venue buttons on lock screen */
+.lock-venues {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 20px;
+}
+
+.lock-venue-btn {
+  background: var(--coal-light);
+  border: 1px solid var(--iron);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  transition: var(--transition);
+  text-align: left;
+  width: 100%;
+}
+
+.lock-venue-btn:hover { border-color: var(--ember); }
+.lock-venue-btn.selected { border-color: var(--ember); background: var(--coal-light); }
+
+.lock-venue-icon {
+  font-size: 18px; flex-shrink: 0;
+  width: 28px; text-align: center;
+}
+
+.lock-venue-info { flex: 1; }
+
+.lock-venue-name {
+  font-family: var(--font-head);
+  font-size: 14px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--cream);
+}
+
+.lock-venue-desc {
+  font-family: var(--font-body);
+  font-size: 11px; color: var(--cream-dim);
+  margin-top: 1px;
+}
+
+/* PIN pad */
+.pin-area { display: none; margin-top: 4px; }
+.pin-area.visible { display: block; }
+
+.pin-display {
+  display: flex; justify-content: center; gap: 10px;
+  margin-bottom: 16px;
+}
+
+.pin-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--iron-light);
+  transition: var(--transition);
+}
+.pin-dot.filled { background: var(--ember); border-color: var(--ember); }
+
+.pin-pad {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 6px; margin-bottom: 12px;
+}
+
+.pin-key {
+  background: var(--coal-light);
+  border: 1px solid var(--iron);
+  border-radius: var(--radius);
+  padding: 12px 8px;
+  font-family: var(--font-head);
+  font-size: 18px; font-weight: 700;
+  color: var(--cream); cursor: pointer;
+  transition: var(--transition);
+}
+.pin-key:hover { border-color: var(--iron-light); background: var(--iron); }
+.pin-key:active { background: var(--ember); color: var(--coal); }
+.pin-key.wide { grid-column: span 2; font-size: 12px; letter-spacing: 1px; }
+.pin-key.clear { color: var(--cream-dim); font-size: 13px; }
+
+.pin-error {
+  font-family: var(--font-head);
+  font-size: 11px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--ember);
+  text-align: center; min-height: 18px; margin-bottom: 4px;
+}
+
+.lock-back-btn {
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font-head); font-size: 11px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--cream-dim); padding: 6px;
+  transition: var(--transition);
+}
+.lock-back-btn:hover { color: var(--cream); }
+
+/* ──────────────────────────────────────────────────
+   ADMIN MODAL
+────────────────────────────────────────────────── */
+#admin-modal {
+  position: fixed; inset: 0; z-index: 8000;
+  background: rgba(0,0,0,0.8);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+#admin-modal.hidden { display: none; }
+
+.admin-card {
+  background: var(--coal-mid);
+  border: 1px solid var(--iron);
+  border-radius: 12px;
+  padding: 28px;
+  width: min(480px, 100%);
+  max-height: 90vh; overflow-y: auto;
+}
+
+.admin-title {
+  font-family: var(--font-head);
+  font-size: 12px; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--ember);
+  margin-bottom: 4px;
+}
+
+.admin-subtitle {
+  font-family: var(--font-body);
+  font-size: 13px; color: var(--cream-dim);
+  margin-bottom: 24px;
+}
+
+.admin-section-title {
+  font-family: var(--font-head);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--gold-dim); margin-bottom: 10px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--iron);
+}
+
+.admin-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 10px;
+}
+
+.admin-label {
+  font-family: var(--font-body); font-size: 13px;
+  color: var(--cream); flex: 1;
+}
+
+.admin-input {
+  background: var(--coal-light);
+  border: 1px solid var(--iron);
+  border-radius: var(--radius);
+  padding: 7px 12px;
+  font-family: var(--font-head); font-size: 14px;
+  color: var(--cream); width: 120px;
+  letter-spacing: 3px; text-align: center;
+}
+
+.admin-input:focus {
+  outline: none; border-color: var(--ember);
+}
+
+.admin-toggle-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px; padding: 8px 10px;
+  background: var(--coal-light); border-radius: var(--radius);
+}
+
+.admin-toggle-row input[type="checkbox"] {
+  width: 15px; height: 15px; accent-color: var(--ember); flex-shrink: 0;
+}
+
+.admin-toggle-label {
+  font-family: var(--font-body); font-size: 13px; color: var(--cream); flex: 1;
+}
+
+.admin-mode-tab {
+  display: flex; gap: 4px; margin-bottom: 14px;
+}
+
+.admin-mode-btn {
+  flex: 1; background: var(--coal-light);
+  border: 1px solid var(--iron); border-radius: var(--radius);
+  padding: 7px 4px; cursor: pointer;
+  font-family: var(--font-head); font-size: 11px;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--cream-dim); transition: var(--transition);
+}
+.admin-mode-btn.active { background: var(--ember); color: var(--white); border-color: var(--ember); }
+
+.admin-footer {
+  display: flex; gap: 8px; margin-top: 20px;
+  padding-top: 16px; border-top: 1px solid var(--iron);
+}
+
+.btn-primary {
+  flex: 1; background: var(--ember);
+  border: none; border-radius: var(--radius);
+  padding: 10px 16px; cursor: pointer;
+  font-family: var(--font-head); font-size: 12px;
+  font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--white);
+  transition: var(--transition);
+}
+.btn-primary:hover { background: var(--ember-dark); }
+
+.btn-ghost {
+  background: none; border: 1px solid var(--iron);
+  border-radius: var(--radius); padding: 10px 16px;
+  cursor: pointer; font-family: var(--font-head);
+  font-size: 12px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--cream-dim);
+  transition: var(--transition);
+}
+.btn-ghost:hover { border-color: var(--iron-light); color: var(--cream); }
+
+/* ──────────────────────────────────────────────────
+   MAIN APP
+────────────────────────────────────────────────── */
+.app-shell {
+  position: relative; z-index: 1;
+  max-width: 1400px; margin: 0 auto;
+  padding: 0 0 80px;
+}
+
+/* ── TOP BAR ── */
+.top-bar {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--coal);
+  border-bottom: 1px solid var(--iron);
+  padding: 10px 20px;
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 12px;
+}
+
+.top-bar-left {
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+
+.brand-mark {
+  width: 36px; height: 36px;
+  background: var(--ember); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head); font-weight: 700;
+  font-size: 12px; color: var(--coal); flex-shrink: 0;
+  position: relative;
+}
+.brand-mark::before {
+  content: ''; position: absolute; inset: 2px;
+  border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);
+}
+
+.brand-name {
+  font-family: var(--font-display); font-size: 18px;
+  font-weight: 700; color: var(--cream); line-height: 1;
+}
+.brand-name span { color: var(--ember); }
+
+.venue-badge {
+  font-family: var(--font-head); font-size: 10px;
+  font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase;
+  background: var(--coal-light); border: 1px solid var(--iron);
+  color: var(--cream-dim); padding: 3px 10px;
+  border-radius: 99px; flex-shrink: 0;
+}
+
+.top-bar-right {
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* mode switcher — only shown when unlocked */
+.mode-switcher {
+  display: flex; background: var(--coal-light);
+  border: 1px solid var(--iron); border-radius: 99px;
+  padding: 3px; gap: 2px; overflow-x: auto;
+  scrollbar-width: none;
+}
+.mode-switcher::-webkit-scrollbar { display: none; }
+.mode-switcher.locked { display: none; }
+
+.mode-btn {
+  background: none; border: none; cursor: pointer;
+  padding: 5px 12px; border-radius: 99px;
+  font-family: var(--font-head); font-weight: 600;
+  font-size: 11px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--cream-dim);
+  white-space: nowrap; transition: var(--transition);
+}
+.mode-btn.active { background: var(--ember); color: var(--white); }
+.mode-btn:hover:not(.active) { color: var(--cream); background: var(--coal-mid); }
+
+/* lock button */
+.lock-btn {
+  background: none; border: 1px solid var(--iron);
+  border-radius: var(--radius); padding: 6px 10px;
+  cursor: pointer; color: var(--iron-light);
+  font-size: 14px; line-height: 1;
+  transition: var(--transition); flex-shrink: 0;
+}
+.lock-btn:hover { color: var(--cream-dim); border-color: var(--iron-light); }
+.lock-btn.locked { color: var(--ember); border-color: var(--ember-dark); }
+
+/* admin btn */
+.admin-btn {
+  background: none; border: 1px solid var(--iron);
+  border-radius: var(--radius); padding: 5px 9px;
+  cursor: pointer; color: var(--iron-light);
+  font-family: var(--font-head); font-size: 10px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  transition: var(--transition); flex-shrink: 0;
+}
+.admin-btn:hover { color: var(--cream-dim); border-color: var(--iron-light); }
+.admin-btn.hidden { display: none; }
+
+/* ── SECTION CONTROLS ── */
+.section-controls {
+  padding: 12px 20px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--iron);
+  background: var(--coal-mid);
+}
+.section-controls.locked { display: none; }
+
+.controls-label {
+  font-family: var(--font-head); font-size: 10px;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--iron-light); padding: 5px 0;
+  display: flex; align-items: center; width: 100%; margin-bottom: -2px;
+}
+.controls-label::after {
+  content: ''; flex: 1; height: 1px;
+  background: var(--iron); margin-left: 10px;
+}
+
+.section-toggle {
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer; padding: 5px 10px;
+  border-radius: 4px; border: 1px solid var(--iron);
+  background: none; transition: var(--transition); user-select: none;
+}
+.section-toggle:hover { border-color: var(--iron-light); }
+.section-toggle input[type="checkbox"] {
+  width: 14px; height: 14px; accent-color: var(--ember);
+  cursor: pointer; flex-shrink: 0;
+}
+.section-toggle-label {
+  font-family: var(--font-head); font-size: 11px;
+  font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--cream-dim);
+  cursor: pointer; transition: var(--transition);
+}
+.section-toggle input:checked + .section-toggle-label { color: var(--gold); }
+
+/* ── MENU BODY ── */
+.menu-body { padding: 0 20px; }
+
+.menu-section {
+  margin-top: 28px;
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.section-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--iron);
+}
+
+.section-icon {
+  width: 28px; height: 28px;
+  background: var(--coal-light); border: 1px solid var(--iron);
+  border-radius: 4px; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+
+.section-title {
+  font-family: var(--font-head); font-size: 14px;
+  font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--ember); flex: 1;
+}
+
+.section-note {
+  font-family: var(--font-head); font-size: 10px;
+  letter-spacing: 1px; color: var(--iron-light);
+  text-transform: uppercase;
+}
+
+/* ── ITEM GRID ── */
+/* Responsive column count based on viewport */
+.item-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3px;
+}
+
+/* tablet */
+@media (min-width: 640px) {
+  .item-grid { grid-template-columns: 1fr 1fr; }
+  .item-grid.single { grid-template-columns: 1fr; }
+}
+
+/* desktop/POS */
+@media (min-width: 1024px) {
+  .item-grid { grid-template-columns: repeat(3, 1fr); }
+  .item-grid.two-col { grid-template-columns: 1fr 1fr; }
+}
+
+/* large display / TV */
+@media (min-width: 1400px) {
+  .item-grid { grid-template-columns: repeat(4, 1fr); }
+  .item-grid.two-col { grid-template-columns: 1fr 1fr; }
+  :root { --scale: 1.15; }
+  .app-shell { padding: 0 0 60px; }
+  .menu-body { padding: 0 32px; }
+  .section-title { font-size: 16px; }
+  .top-bar { padding: 14px 32px; }
+  .brand-mark { width: 44px; height: 44px; font-size: 14px; }
+  .brand-name { font-size: 22px; }
+}
+
+/* ── MENU ITEM ── */
+.menu-item {
+  padding: 12px 14px;
+  background: var(--coal-mid);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  transition: var(--transition);
+}
+.menu-item:hover { border-color: var(--iron); background: var(--coal-light); }
+
+.item-row {
+  display: flex; justify-content: space-between;
+  align-items: baseline; gap: 8px; margin-bottom: 3px;
+}
+
+.item-name {
+  font-family: var(--font-display);
+  font-size: calc(14px * var(--scale));
+  font-weight: 600; color: var(--cream);
+  line-height: 1.3; flex: 1;
+}
+
+.item-price {
+  font-family: var(--font-head);
+  font-size: calc(14px * var(--scale));
+  font-weight: 700; color: var(--ember); flex-shrink: 0;
+}
+
+.item-sub {
+  font-family: var(--font-head); font-size: 10px;
+  font-weight: 500; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--gold-dim); margin-bottom: 3px;
+}
+
+.item-desc {
+  font-family: var(--font-body);
+  font-size: calc(12px * var(--scale));
+  color: var(--cream-dim); line-height: 1.5;
+}
+
+.item-badge {
+  display: inline-block; font-family: var(--font-head);
+  font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; background: var(--ember-dark);
+  color: var(--cream); padding: 2px 6px; border-radius: 3px;
+  margin-left: 6px; vertical-align: middle; position: relative; top: -1px;
+}
+.item-badge.new { background: var(--gold-dim); }
+.item-badge.fan { background: var(--rust); }
+
+/* ── DIVIDER ── */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--iron), transparent);
+  margin: 24px 0 0;
+}
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  display: none; padding: 60px 20px; text-align: center;
+}
+.empty-state.visible { display: block; }
+.empty-icon { font-size: 32px; margin-bottom: 12px; }
+.empty-title {
+  font-family: var(--font-display); font-size: 20px;
+  color: var(--cream-dim); margin-bottom: 6px;
+}
+.empty-sub { font-family: var(--font-body); font-size: 13px; color: var(--iron-light); }
+
+/* ── FOOTER ── */
+.menu-footer { padding: 28px 20px 12px; text-align: center; }
+.footer-tagline {
+  font-family: var(--font-display); font-size: 13px;
+  font-style: italic; color: var(--iron-light); letter-spacing: 0.5px;
+}
+.footer-rule { width: 40px; height: 1px; background: var(--iron); margin: 10px auto; }
+.footer-sub {
+  font-family: var(--font-head); font-size: 10px;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--iron-light);
+}
+
+/* ── MOBILE ── */
+@media (max-width: 480px) {
+  .top-bar { padding: 8px 14px; gap: 8px; }
+  .brand-name { font-size: 15px; }
+  .mode-btn { padding: 5px 9px; font-size: 10px; }
+  .menu-body { padding: 0 12px; }
+  .section-controls { padding: 10px 12px; }
+  .admin-btn span { display: none; }
+}
+
+/* ── TV / KIOSK: hide admin controls ── */
+@media (min-width: 1400px) {
+  .section-controls { padding: 14px 32px; }
+}
+
+
+/* ── THE MANIFEST — LOCK SCREEN HERO ── */
+.lock-hero {
+  width: min(340px, 90vw);
+  height: 140px;
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+  margin-bottom: 0;
+  position: relative;
+  background: var(--coal-light);
+}
+
+.lock-hero::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 30%, var(--coal) 100%);
+}
+
+#lock-hero-img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+#lock-hero-img.loaded { opacity: 1; }
+
+/* nudge card up to connect with hero */
+.lock-hero + .lock-logo { margin-top: -28px; position: relative; z-index: 2; }
+
+.lock-logo {
+  font-family: var(--font-display);
+  font-size: 28px; font-weight: 700;
+  color: var(--white); letter-spacing: 0.5px;
+  margin-bottom: 2px; text-align: center;
+}
+.lock-logo span { color: var(--ember); }
+
+.lock-logo-sub {
+  font-family: var(--font-head);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--cream-dim); text-align: center;
+  margin-bottom: 6px;
+}
+.lock-logo-sub .em { color: var(--ember); }
+
+/* connect hero to card */
+.lock-card {
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  margin-top: 0;
+}
+
+/* when no hero image (single-venue / admin flow), restore normal card */
+.lock-card.standalone {
+  border-top: 1px solid var(--iron);
+  border-radius: 12px;
+}
+
+/* ── THE MANIFEST — TOP BAR ── */
+.manifest-word {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ember);
+}
+.brand-sub {
+  font-family: var(--font-head);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 1.5px; color: var(--cream-dim);
+  text-transform: uppercase; margin-left: 2px;
+}
+
+/* ── VENUE HERO IMAGE (in-menu) ── */
+.venue-hero {
+  width: 100%;
+  height: 180px;
+  position: relative;
+  overflow: hidden;
+  background: var(--coal-light);
+  display: none;
+}
+.venue-hero.has-image { display: block; }
+.venue-hero img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center 30%;
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.venue-hero img.loaded { opacity: 1; }
+.venue-hero-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(15,11,8,0.1) 0%, rgba(15,11,8,0.75) 100%);
+  display: flex; flex-direction: column;
+  justify-content: flex-end; padding: 18px 20px 14px;
+}
+.venue-hero-name {
+  font-family: var(--font-display);
+  font-size: 26px; font-weight: 700;
+  color: var(--white); line-height: 1.1;
+}
+.venue-hero-desc {
+  font-family: var(--font-head);
+  font-size: 11px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--cream-dim);
+  margin-top: 3px;
+}
+
+@media (min-width: 1024px) { .venue-hero { height: 220px; } }
+@media (min-width: 1400px) { .venue-hero { height: 260px; } }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--coal); }
+::-webkit-scrollbar-thumb { background: var(--iron); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     LOCK SCREEN
+══════════════════════════════════════════ -->
+<div id="lock-screen">
+  <div class="lock-hero" id="lock-hero">
+    <img id="lock-hero-img" src="" alt="" aria-hidden="true">
+  </div>
+  <div class="lock-logo"><span>The Manifest</span></div>
+  <div class="lock-logo-sub">Iron <span class="em">&</span> Embers</div>
+  <div class="lock-tagline">The Heat of the Mine · The Heart of the Town</div>
+
+  <div class="lock-card">
+    <div class="lock-title">Select Location</div>
+    <div class="lock-subtitle">Choose where you're serving</div>
+
+    <div class="lock-venues" id="lock-venues">
+      <button class="lock-venue-btn" data-mode="outpost" onclick="selectLockVenue('outpost')">
+        <div class="lock-venue-icon">☀</div>
+        <div class="lock-venue-info">
+          <div class="lock-venue-name">The Outpost</div>
+          <div class="lock-venue-desc">Breakfast & lunch service</div>
+        </div>
+      </button>
+      <button class="lock-venue-btn" data-mode="venue" onclick="selectLockVenue('venue')">
+        <div class="lock-venue-icon">🎸</div>
+        <div class="lock-venue-info">
+          <div class="lock-venue-name">Bar & Grill</div>
+          <div class="lock-venue-desc">Full service — dining, bar & events</div>
+        </div>
+      </button>
+      <button class="lock-venue-btn" data-mode="mule" onclick="selectLockVenue('mule')">
+        <div class="lock-venue-icon">🚚</div>
+        <div class="lock-venue-info">
+          <div class="lock-venue-name">The Mule</div>
+          <div class="lock-venue-desc">Food truck window service</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- PIN entry -->
+    <div class="pin-area" id="pin-area">
+      <div class="pin-display">
+        <div class="pin-dot" id="d0"></div>
+        <div class="pin-dot" id="d1"></div>
+        <div class="pin-dot" id="d2"></div>
+        <div class="pin-dot" id="d3"></div>
+      </div>
+      <div class="pin-error" id="pin-error"></div>
+      <div class="pin-pad">
+        <button class="pin-key" onclick="pinKey('1')">1</button>
+        <button class="pin-key" onclick="pinKey('2')">2</button>
+        <button class="pin-key" onclick="pinKey('3')">3</button>
+        <button class="pin-key" onclick="pinKey('4')">4</button>
+        <button class="pin-key" onclick="pinKey('5')">5</button>
+        <button class="pin-key" onclick="pinKey('6')">6</button>
+        <button class="pin-key" onclick="pinKey('7')">7</button>
+        <button class="pin-key" onclick="pinKey('8')">8</button>
+        <button class="pin-key" onclick="pinKey('9')">9</button>
+        <button class="pin-key clear" onclick="pinClear()">⌫</button>
+        <button class="pin-key" onclick="pinKey('0')">0</button>
+        <button class="pin-key wide" onclick="pinBack()">Back</button>
+      </div>
+      <button class="lock-back-btn" onclick="showVenueSelect()">← Change Location</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADMIN MODAL
+══════════════════════════════════════════ -->
+<div id="admin-modal" class="hidden">
+  <div class="admin-card">
+    <div class="admin-title">⚙ Admin Settings</div>
+    <div class="admin-subtitle">Configure PINs and menu sections per location</div>
+
+    <!-- ACTIVE LOCATIONS -->
+    <div class="admin-section-title" style="margin-bottom:12px;">Active Locations</div>
+    <div style="margin-bottom:20px;">
+      <div class="admin-toggle-row">
+        <input type="checkbox" id="active-mule" data-active="mule">
+        <label class="admin-toggle-label" for="active-mule">🚚 The Mule — food truck</label>
+      </div>
+      <div class="admin-toggle-row">
+        <input type="checkbox" id="active-outpost" data-active="outpost">
+        <label class="admin-toggle-label" for="active-outpost">☀ The Outpost — breakfast & lunch</label>
+      </div>
+      <div class="admin-toggle-row">
+        <input type="checkbox" id="active-venue" data-active="venue">
+        <label class="admin-toggle-label" for="active-venue">🎸 Bar & Grill — full service</label>
+      </div>
+      <div style="font-family:var(--font-body);font-size:11px;color:var(--iron-light);margin-top:8px;padding:0 2px;">
+        Inactive locations are hidden from the lock screen. At least one must stay active.
+      </div>
+    </div>
+
+    <!-- PIN SETTINGS -->
+    <div class="admin-section-title" style="margin-bottom:12px;">Admin PIN</div>
+    <div class="admin-row" style="margin-bottom:20px;">
+      <div style="font-size:16px;">🔑</div>
+      <div class="admin-label">Admin PIN <span style="font-size:11px;color:var(--iron-light);">— unlocks management</span></div>
+      <input class="admin-input" type="password" id="pin-admin" maxlength="4" placeholder="••••">
+    </div>
+
+    <div class="admin-section-title" style="margin-bottom:12px;">Location PINs</div>
+
+    <div class="admin-row">
+      <div class="lock-venue-icon" style="font-size:16px;">☀</div>
+      <div class="admin-label">Outpost PIN</div>
+      <input class="admin-input" type="password" id="pin-outpost" maxlength="4" placeholder="••••">
+    </div>
+    <div class="admin-row">
+      <div class="lock-venue-icon" style="font-size:16px;">🎸</div>
+      <div class="admin-label">Bar & Grill PIN</div>
+      <input class="admin-input" type="password" id="pin-venue" maxlength="4" placeholder="••••">
+    </div>
+    <div class="admin-row" style="margin-bottom:22px;">
+      <div class="lock-venue-icon" style="font-size:16px;">🚚</div>
+      <div class="admin-label">Mule PIN</div>
+      <input class="admin-input" type="password" id="pin-mule" maxlength="4" placeholder="••••">
+    </div>
+
+    <!-- SECTION TOGGLES PER MODE -->
+    <div class="admin-section-title">Default Sections Per Location</div>
+    <div class="admin-mode-tab" id="admin-mode-tab">
+      <button class="admin-mode-btn active" data-amode="outpost" onclick="setAdminMode('outpost')">☀ Outpost</button>
+      <button class="admin-mode-btn" data-amode="venue" onclick="setAdminMode('venue')">🎸 Bar & Grill</button>
+      <button class="admin-mode-btn" data-amode="mule" onclick="setAdminMode('mule')">🚚 Mule</button>
+    </div>
+    <div id="admin-section-toggles"></div>
+
+    <div class="admin-footer">
+      <button class="btn-ghost" onclick="closeAdmin()">Cancel</button>
+      <button class="btn-primary" onclick="saveAdmin()">Save & Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════ -->
+<div class="app-shell">
+
+  <header class="top-bar">
+    <div class="top-bar-left">
+      <div class="brand-name"><span class="manifest-word">The Manifest</span> <span class="brand-sub">· Iron &amp; Embers</span></div>
+      <div class="venue-badge" id="venue-badge">—</div>
+    </div>
+
+    <div class="top-bar-right">
+      <div class="mode-switcher locked" id="mode-switcher">
+        <button class="mode-btn" data-mode="outpost">☀ Outpost</button>
+        <button class="mode-btn" data-mode="venue">🎸 Bar & Grill</button>
+        <button class="mode-btn" data-mode="mule">🚚 Mule</button>
+      </div>
+      <button class="admin-btn hidden" id="admin-btn" onclick="openAdmin()" title="Admin settings">
+        ⚙ <span>Admin</span>
+      </button>
+      <button class="lock-btn locked" id="lock-btn" onclick="toggleLock()" title="Lock / unlock">🔒</button>
+    </div>
+  </header>
+
+  <div class="section-controls locked" id="section-controls"></div>
+  <div class="venue-hero" id="venue-hero">
+    <img id="venue-hero-img" src="" alt="">
+    <div class="venue-hero-overlay">
+      <div class="venue-hero-name" id="venue-hero-name"></div>
+      <div class="venue-hero-desc" id="venue-hero-desc"></div>
+    </div>
+  </div>
+  <div class="menu-body" id="menu-body"></div>
+  <div class="empty-state" id="empty-state">
+    <div class="empty-icon">⛏</div>
+    <div class="empty-title">Nothing to show</div>
+    <div class="empty-sub">Enable at least one menu section above.</div>
+  </div>
+
+  <div class="menu-footer">
+    <div class="footer-rule"></div>
+    <div class="footer-tagline">"The Heat of the Mine. The Heart of the Town."</div>
+    <div class="footer-rule"></div>
+    <div class="footer-sub">The Manifest · Iron & Embers Bar & Grill, LLC · Est. 2024 · Southeast Kansas</div>
+  </div>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   DATA
+══════════════════════════════════════════════════ */
+const ALL_SECTIONS = [
+  {
+    id: 'breakfast',
+    label: 'Rise & Shine',
+    icon: '☀',
+    note: 'Served all day',
+    modes: ['outpost','venue','mule'],
+    defaultOn: { outpost: true, venue: true, mule: true },
+    items: [
+      { name: "The Foreman's Plate", badge: 'Signature', price: '$14', desc: 'Three eggs your way, smoked sausage links, hash browns, toast, choice of gravy or salsa' },
+      { name: "Ore Cart Biscuits & Gravy", price: '$11', desc: 'Two house-made biscuits smothered in sausage cream gravy, served with two eggs any style' },
+      { name: "Coal Black Skillet", price: '$13', desc: 'Cast iron hash browns, peppers, onions, pulled brisket, two eggs, smoked cheddar, hot sauce drizzle' },
+      { name: "Daybreak Stack", price: '$10', desc: 'Three buttermilk pancakes, candied bacon crumble, maple butter, powdered sugar' },
+      { name: "Miner's Breakfast Burger", price: '$13', desc: '1/3 lb patty, fried egg, cheddar, bacon, hash brown patty, ember aioli on toasted brioche' },
+      { name: "Tunnel Vision Wrap", price: '$11', desc: 'Scrambled eggs, chorizo, black beans, roasted peppers, smoked cheddar, salsa verde in a flour tortilla' },
+    ]
+  },
+  {
+    id: 'starters',
+    label: 'Starters',
+    icon: '🔥',
+    modes: ['venue','outpost'],
+    defaultOn: { venue: true, outpost: true },
+    items: [
+      { name: 'Coalpit Queso Dip', price: '$9', desc: 'Smoked jalapeño queso with chorizo crumbles, pickled red onion, warm tortilla chips' },
+      { name: 'Fried Pickle Chips', badge: 'Fan Fav', badgeStyle: 'fan', price: '$8', desc: 'Dill pickle slices in seasoned cornmeal batter, fried golden, ranch and ember aioli' },
+      { name: 'Blasting Cap Nachos', price: '$13', desc: 'Loaded tortilla chips, pulled pork, smoked queso, pico, black beans, sour cream, jalapeños' },
+      { name: 'Pickaxe Pretzel Sticks', price: '$8', desc: 'Jumbo baked pretzel sticks, beer cheese dipping sauce, whole grain mustard' },
+      { name: 'Steel City Sliders', price: '$12', desc: 'Three smash-style beef sliders, American cheese, caramelized onion, pickles, ember sauce' },
+    ]
+  },
+  {
+    id: 'entrees',
+    label: 'Entrees',
+    icon: '🥩',
+    note: 'Served with two pickaxe sides',
+    modes: ['venue'],
+    defaultOn: { venue: true },
+    twoCol: true,
+    items: [
+      { name: "The Claim Jumper", badge: 'Signature', price: '$18', sub: 'Country Fried Steak', desc: 'Hand-breaded cube steak fried crispy, smothered in house peppered white gravy' },
+      { name: "The Canary", price: '$16', sub: 'Chicken Fried Chicken', desc: 'Pounded chicken breast, golden fried in buttermilk batter, topped with sausage cream gravy' },
+      { name: "The Ember Bird", badge: 'New', badgeStyle: 'new', price: '$19', sub: 'Oven-Roasted Half Chicken', desc: 'Herb-rubbed half chicken slow-roasted until golden, pan drip gravy and root vegetables' },
+      { name: "Ember-Rubbed Ribeye", badge: '12 oz', price: '$36', desc: 'Hand-cut ribeye with house Ember Dust rub, finished in a screaming hot cast iron skillet' },
+      { name: "Ironclad Meatloaf", price: '$17', desc: 'Smoked beef and pork meatloaf, Iron BBQ glaze, brown gravy, served hot from the oven' },
+      { name: "Smothered Pork Chop", price: '$19', desc: 'Thick-cut bone-in pork chop, pan-seared, caramelized onion and mushroom gravy' },
+      { name: "Campfire Pot Roast", price: '$20', desc: 'Slow-braised beef chuck, carrots, potatoes, celery, rich pan drippings gravy' },
+    ]
+  },
+  {
+    id: 'handhelds',
+    label: 'Handhelds',
+    icon: '🍔',
+    note: 'Served with choice of side',
+    modes: ['venue','outpost','mule'],
+    defaultOn: { venue: true, outpost: true, mule: true },
+    items: [
+      { name: 'The Iron Standard', badge: 'Signature', price: '$15', desc: '1/2 lb smash burger, smoked cheddar, ember sauce, lettuce, tomato, house pickles, toasted brioche' },
+      { name: 'Double Down Double Smash', price: '$17', desc: 'Two smash patties, American cheese, bacon, caramelized onion, coal sauce, shredded lettuce' },
+      { name: 'Brisket Grilled Cheese', price: '$14', desc: 'Shaved smoked brisket, smoked gouda, white cheddar, pickled jalapeño, Iron BBQ on Texas toast' },
+      { name: 'Ember Club Sandwich', price: '$13', desc: 'Sliced turkey, thick-cut bacon, smoked ham, Swiss, lettuce, tomato, ember aioli on toasted sourdough' },
+    ]
+  },
+  {
+    id: 'sides',
+    label: 'Pickaxe Sides',
+    icon: '🥔',
+    modes: ['venue','outpost','mule'],
+    defaultOn: { venue: true, outpost: true, mule: true },
+    items: [
+      { name: 'Ember Dust Fries', price: '$5', desc: 'Hand-cut fries tossed in house spice blend' },
+      { name: 'Smoked Gouda Mac', price: '$6', desc: 'Creamy three-cheese mac, smoked gouda finish' },
+      { name: 'Pit Beans', price: '$5', desc: 'Slow-cooked pinto beans, smoked pork, brown sugar, jalapeño' },
+      { name: 'Iron Skillet Corn', price: '$5', desc: 'Charred sweet corn, chili butter, cotija cheese' },
+      { name: 'Shaft House Slaw', price: '$4', desc: 'Creamy vinegar slaw with celery seed and apple' },
+      { name: 'Garlic Mash', price: '$5', desc: 'Whipped Yukon gold potatoes, roasted garlic butter' },
+      { name: 'Green Beans & Ham', price: '$5', desc: 'Slow-simmered Southern-style green beans with smoked ham hock' },
+    ]
+  },
+  {
+    id: 'cocktails',
+    label: 'Cocktails',
+    icon: '🍸',
+    modes: ['venue'],
+    defaultOn: { venue: true },
+    items: [
+      { name: 'The Ember Old Fashioned', price: '$12', desc: 'Bourbon, smoked simple syrup, aromatic bitters, charred orange peel' },
+      { name: 'Coalfire Margarita', price: '$11', desc: 'Tequila, activated charcoal salt rim, lime, agave, smoked jalapeño' },
+      { name: 'Lantern Light Mule', price: '$10', desc: 'Ginger beer, vodka, blackberry shrub, lime, served in a copper mug' },
+      { name: "Foreman's Whiskey Sour", price: '$11', desc: 'Rye whiskey, honey lemon, egg white foam, Angostura bitters' },
+      { name: 'Iron Spike Lemonade', price: '$10', desc: 'Strawberry vodka, fresh lemonade, grenadine, mint — served by the pint' },
+    ]
+  },
+  {
+    id: 'beer-wine',
+    label: 'Beer & Wine',
+    icon: '🍺',
+    modes: ['venue'],
+    defaultOn: { venue: true },
+    items: [
+      { name: 'Draft Beers', price: '$5–7', desc: "Ask your server for today's rotating taps — always local and regional craft selections" },
+      { name: 'Domestic Bottles', price: '$4', desc: 'Bud Light, Coors Light, Miller Lite, Michelob Ultra' },
+      { name: 'Import & Craft Cans', price: '$5–6', desc: 'Modelo Especial, Dos Equis, Blue Moon, Heineken, Sam Adams' },
+      { name: 'House Red or White Wine', price: '$8', desc: 'Glass pour — Cabernet Sauvignon, Merlot, Chardonnay, or Pinot Grigio' },
+      { name: 'Bucket of 5 Domestics', price: '$18', desc: 'Your choice, served on ice — great for game day' },
+    ]
+  },
+  {
+    id: 'nonalc',
+    label: 'Non-Alcoholic',
+    icon: '🥤',
+    modes: ['venue','outpost','mule'],
+    defaultOn: { venue: true, outpost: true, mule: true },
+    items: [
+      { name: 'Fountain Drinks', price: '$3', desc: 'Pepsi, Diet Pepsi, Mtn Dew, Dr Pepper, Lemonade — free refills' },
+      { name: 'Shaft House Lemonade', price: '$4', desc: 'Fresh-squeezed with a choice of strawberry, peach, or classic' },
+      { name: 'Sweet Tea or Unsweet', price: '$3', desc: 'Southern-style brewed tea — bottomless' },
+      { name: 'Virgin Coalfire Margarita', price: '$7', desc: 'All the flavor, none of the fire — lime, agave, smoked jalapeño' },
+      { name: 'Coffee or Hot Tea', price: '$3', desc: 'Regular or decaf — bottomless all day' },
+    ]
+  },
+  {
+    id: 'kids',
+    label: 'Kids Menu',
+    icon: '⭐',
+    note: '12 & under',
+    modes: ['venue','outpost'],
+    defaultOn: { venue: true, outpost: true },
+    items: [
+      { name: "Little Miner's Burger", price: '$8', desc: 'Small smash burger with cheese, ketchup, fries' },
+      { name: 'Chicken Tenders & Fries', price: '$8', desc: 'Three crispy tenders with dipping sauce' },
+      { name: 'Mac Attack', price: '$7', desc: 'Creamy mac and cheese with garlic bread' },
+      { name: 'Mini Corn Dog Platter', price: '$7', desc: 'Six mini corn dogs, fries, and ketchup' },
+    ]
+  },
+  {
+    id: 'dessert',
+    label: 'Sweet Finish',
+    icon: '🍫',
+    modes: ['venue'],
+    defaultOn: { venue: true },
+    items: [
+      { name: 'Smoked Chocolate Lava Cake', price: '$9', desc: 'Warm chocolate cake, liquid center, vanilla bean ice cream, sea salt' },
+      { name: 'Cast Iron Cookie Skillet', price: '$8', desc: 'Giant warm chocolate chip cookie, two scoops ice cream, caramel drizzle' },
+      { name: "Ember S'mores Brownie", price: '$7', desc: 'Fudge brownie, toasted marshmallow, graham crumb, chocolate sauce' },
+      { name: 'Bourbon Bread Pudding', price: '$8', desc: 'House bread pudding, Jim Beam caramel sauce, whipped cream' },
+    ]
+  },
+];
+
+/* ══════════════════════════════════════════════════
+   STATE & STORAGE
+══════════════════════════════════════════════════ */
+const VENUE_LABELS = {
+  outpost: 'The Outpost',
+  venue: 'Bar & Grill',
+  mule: 'The Mule',
+};
+
+// Image paths — replace src values with actual filenames once generated.
+// Place images in the same folder as this HTML file.
+// Lock screen hero: shown on the venue-picker lock screen (one per venue, or a shared brand image).
+// Menu hero: shown as a full-width banner at the top of the menu when that venue is loaded.
+const VENUE_IMAGES = {
+  outpost: {
+    lockHero: 'img/manifest-outpost-lock.jpg',   // outdoor patio, morning light
+    menuHero: 'img/manifest-outpost-menu.jpg',   // counter service / container exterior
+    menuHeroDesc: 'Breakfast & Lunch · Outdoor Seating',
+  },
+  venue: {
+    lockHero: 'img/manifest-venue-lock.jpg',     // interior wide shot, stage lit
+    menuHero: 'img/manifest-venue-menu.jpg',     // bar or dining room
+    menuHeroDesc: 'Full Service · Bar · Live Music',
+  },
+  mule: {
+    lockHero: 'img/manifest-mule-lock.jpg',      // truck exterior, serving window
+    menuHero: 'img/manifest-mule-menu.jpg',      // truck in field or at event
+    menuHeroDesc: 'Order at the Window',
+  },
+  // Shared fallback shown on lock screen before a venue is selected
+  shared: {
+    lockHero: 'img/manifest-brand-lock.jpg',     // brand hero — dark, forge/coal aesthetic
+  }
+};
+
+function loadImg(imgEl, src) {
+  if (!src) return;
+  imgEl.onload = () => imgEl.classList.add('loaded');
+  imgEl.onerror = () => { imgEl.style.display = 'none'; };
+  imgEl.src = src;
+}
+
+const STORAGE_KEY = 'ie_menu_config';
+
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveConfig(cfg) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); } catch {}
+}
+
+function defaultConfig() {
+  const cfg = {
+    pins: { admin: '0000', outpost: '1111', venue: '2222', mule: '3333' },
+    activeLocations: { mule: true, outpost: false, venue: false },
+    sectionDefaults: {}
+  };
+  ['outpost','venue','mule'].forEach(mode => {
+    cfg.sectionDefaults[mode] = {};
+    ALL_SECTIONS.filter(s => s.modes.includes(mode)).forEach(s => {
+      cfg.sectionDefaults[mode][s.id] = s.defaultOn[mode] !== false;
+    });
+  });
+  return cfg;
+}
+
+function migrateConfig(cfg) {
+  if (!cfg.activeLocations) {
+    cfg.activeLocations = { mule: true, outpost: false, venue: false };
+  }
+  if (!cfg.pins.admin) {
+    cfg.pins.admin = '0000';
+  }
+  return cfg;
+}
+
+let config = migrateConfig(loadConfig() || defaultConfig());
+let currentMode = null;
+let isLocked = true;
+let sectionToggles = {};
+let adminMode = 'outpost';
+
+/* ══════════════════════════════════════════════════
+   LOCK SCREEN LOGIC
+══════════════════════════════════════════════════ */
+let pendingMode = null;
+let currentPin = '';
+
+function buildLockScreen() {
+  const active = ['mule','outpost','venue'].filter(m => config.activeLocations[m]);
+  document.querySelectorAll('.lock-venue-btn').forEach(b => {
+    b.style.display = active.includes(b.dataset.mode) ? '' : 'none';
+  });
+
+  // Load appropriate lock screen hero image
+  const heroImg = document.getElementById('lock-hero-img');
+  const heroSrc = active.length === 1
+    ? (VENUE_IMAGES[active[0]]?.lockHero || VENUE_IMAGES.shared?.lockHero)
+    : VENUE_IMAGES.shared?.lockHero;
+  heroImg.classList.remove('loaded');
+  loadImg(heroImg, heroSrc);
+
+  const backBtn = document.querySelector('.lock-back-btn');
+  if (active.length === 1) {
+    document.querySelector('.lock-title').textContent = 'Enter PIN';
+    document.querySelector('.lock-subtitle').textContent = VENUE_LABELS[active[0]];
+    document.getElementById('lock-venues').style.display = 'none';
+    document.getElementById('pin-area').classList.add('visible');
+    if (backBtn) backBtn.style.display = 'none';
+    pendingMode = active[0];
+    currentPin = '';
+    updatePinDots();
+    document.getElementById('pin-error').textContent = '';
+  } else {
+    document.querySelector('.lock-title').textContent = 'Select Location';
+    document.querySelector('.lock-subtitle').textContent = "Choose where you're serving";
+    document.getElementById('lock-venues').style.display = '';
+    document.getElementById('pin-area').classList.remove('visible');
+    if (backBtn) backBtn.style.display = '';
+    pendingMode = null;
+  }
+}
+
+function selectLockVenue(mode) {
+  pendingMode = mode;
+  document.querySelectorAll('.lock-venue-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.mode === mode);
+  });
+  document.getElementById('lock-venues').style.display = 'none';
+  document.getElementById('pin-area').classList.add('visible');
+  document.getElementById('pin-error').textContent = '';
+  currentPin = '';
+  updatePinDots();
+}
+
+function showVenueSelect() {
+  const active = ['mule','outpost','venue'].filter(m => config.activeLocations[m]);
+  if (active.length <= 1) return;
+  document.getElementById('lock-venues').style.display = '';
+  document.getElementById('pin-area').classList.remove('visible');
+  pendingMode = null;
+  currentPin = '';
+  document.getElementById('pin-error').textContent = '';
+  document.querySelectorAll('.lock-venue-btn').forEach(b => b.classList.remove('selected'));
+}
+
+function pinKey(digit) {
+  if (currentPin.length >= 4) return;
+  currentPin += digit;
+  updatePinDots();
+  if (currentPin.length === 4) {
+    setTimeout(checkPin, 120);
+  }
+}
+
+function pinClear() {
+  if (currentPin.length > 0) {
+    currentPin = currentPin.slice(0, -1);
+    updatePinDots();
+    document.getElementById('pin-error').textContent = '';
+  }
+}
+
+function pinBack() {
+  // If we're in admin PIN prompt, cancel back to the app (lock screen closes)
+  if (pendingMode === '__admin__') {
+    document.getElementById('lock-screen').classList.add('hidden');
+    document.querySelector('.lock-title').textContent = 'Select Location';
+    document.querySelector('.lock-subtitle').textContent = "Choose where you're serving";
+    const back = document.querySelector('.lock-back-btn');
+    if (back) back.style.display = '';
+    currentPin = ''; pendingMode = null;
+    return;
+  }
+  showVenueSelect();
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('d' + i).classList.toggle('filled', i < currentPin.length);
+  }
+}
+
+function pinShake() {
+  const card = document.querySelector('.lock-card');
+  card.style.transform = 'translateX(-8px)';
+  setTimeout(() => { card.style.transform = 'translateX(8px)'; }, 80);
+  setTimeout(() => { card.style.transform = ''; }, 160);
+}
+
+function checkPin() {
+  // ── ADMIN flow ──
+  if (pendingMode === '__admin__') {
+    if (currentPin === config.pins.admin) {
+      dismissLockOverlay();
+      enterManagementMode();
+    } else {
+      document.getElementById('pin-error').textContent = 'Incorrect admin PIN';
+      currentPin = ''; updatePinDots(); pinShake();
+    }
+    return;
+  }
+
+  // ── VENUE flow — only honour active locations ──
+  if (!pendingMode || !config.activeLocations[pendingMode]) {
+    // Should not be reachable, but guard anyway
+    document.getElementById('pin-error').textContent = 'Location not available';
+    currentPin = ''; updatePinDots(); pinShake();
+    return;
+  }
+
+  if (currentPin === config.pins[pendingMode]) {
+    dismissLockOverlay();
+    unlockAs(pendingMode);
+  } else {
+    document.getElementById('pin-error').textContent = 'Incorrect PIN — try again';
+    currentPin = ''; updatePinDots(); pinShake();
+  }
+}
+
+function dismissLockOverlay() {
+  document.getElementById('lock-screen').classList.add('hidden');
+  // reset lock screen UI back to defaults for next time
+  document.querySelector('.lock-title').textContent = 'Select Location';
+  document.querySelector('.lock-subtitle').textContent = "Choose where you're serving";
+}
+
+function unlockAs(mode) {
+  currentMode = mode;
+  isLocked = true; // locked TO this venue (management UI hidden)
+
+  sectionToggles = {};
+  const defaults = config.sectionDefaults[mode] || {};
+  ALL_SECTIONS.filter(s => s.modes.includes(mode)).forEach(s => {
+    sectionToggles[s.id] = defaults[s.id] !== undefined ? defaults[s.id] : (s.defaultOn[mode] !== false);
+  });
+
+  document.getElementById('venue-badge').textContent = VENUE_LABELS[mode];
+  document.getElementById('mode-switcher').classList.add('locked');
+  document.getElementById('section-controls').classList.add('locked');
+  document.getElementById('admin-btn').classList.add('hidden');
+  const lb = document.getElementById('lock-btn');
+  lb.classList.add('locked');
+  lb.textContent = '🔒';
+  lb.title = 'Tap to manage';
+
+  updateVenueHero(mode);
+  renderMenu();
+}
+
+/* ══════════════════════════════════════════════════
+   MANAGEMENT ACCESS (admin PIN)
+══════════════════════════════════════════════════ */
+function toggleLock() {
+  if (!isLocked) {
+    lockDown();
+  } else {
+    promptAdminPin();
+  }
+}
+
+function promptAdminPin() {
+  const ls = document.getElementById('lock-screen');
+  ls.classList.remove('hidden');
+  document.getElementById('lock-venues').style.display = 'none';
+  document.getElementById('pin-area').classList.add('visible');
+  pendingMode = '__admin__';
+  currentPin = '';
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+  document.querySelector('.lock-title').textContent = 'Admin Access';
+  document.querySelector('.lock-subtitle').textContent = 'Enter admin PIN';
+  // hide the "Change Location" back button — not relevant here
+  const back = document.querySelector('.lock-back-btn');
+  if (back) back.style.display = 'none';
+}
+
+function enterManagementMode() {
+  isLocked = false;
+  // keep currentMode as-is (whatever venue was loaded before)
+  document.getElementById('mode-switcher').classList.remove('locked');
+  document.getElementById('section-controls').classList.remove('locked');
+  document.getElementById('admin-btn').classList.remove('hidden');
+  const lb = document.getElementById('lock-btn');
+  lb.classList.remove('locked');
+  lb.textContent = '🔓';
+  lb.title = 'Lock to current venue';
+
+  // filter mode switcher to only active locations
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.style.display = config.activeLocations[btn.dataset.mode] ? '' : 'none';
+  });
+
+  // if no venue was loaded yet, default to first active
+  if (!currentMode) {
+    const first = ['mule','outpost','venue'].find(m => config.activeLocations[m]);
+    if (first) setMode(first);
+  } else {
+    setMode(currentMode);
+  }
+}
+
+function lockDown() {
+  isLocked = true;
+  document.getElementById('mode-switcher').classList.add('locked');
+  document.getElementById('section-controls').classList.add('locked');
+  document.getElementById('admin-btn').classList.add('hidden');
+  const lb = document.getElementById('lock-btn');
+  lb.classList.add('locked');
+  lb.textContent = '🔒';
+  lb.title = 'Tap to manage location';
+  renderMenu();
+}
+
+/* ══════════════════════════════════════════════════
+   MODE SWITCHING (unlocked only)
+══════════════════════════════════════════════════ */
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  document.getElementById('venue-badge').textContent = VENUE_LABELS[mode];
+
+  // reset toggles
+  sectionToggles = {};
+  const defaults = config.sectionDefaults[mode] || {};
+  ALL_SECTIONS.filter(s => s.modes.includes(mode)).forEach(s => {
+    sectionToggles[s.id] = defaults[s.id] !== undefined ? defaults[s.id] : (s.defaultOn[mode] !== false);
+  });
+
+  updateVenueHero(mode);
+  renderControls();
+  renderMenu();
+}
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => setMode(btn.dataset.mode));
+});
+
+/* ══════════════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════════════ */
+function renderControls() {
+  const el = document.getElementById('section-controls');
+  const sections = ALL_SECTIONS.filter(s => s.modes.includes(currentMode));
+  let html = '<span class="controls-label">Sections</span>';
+  sections.forEach(s => {
+    const checked = sectionToggles[s.id] ? 'checked' : '';
+    html += `<label class="section-toggle">
+      <input type="checkbox" data-section="${s.id}" ${checked}>
+      <span class="section-toggle-label">${s.icon} ${s.label}</span>
+    </label>`;
+  });
+  el.innerHTML = html;
+  el.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', e => {
+      sectionToggles[e.target.dataset.section] = e.target.checked;
+      renderMenu();
+    });
+  });
+}
+
+function renderMenu() {
+  const el = document.getElementById('menu-body');
+  const empty = document.getElementById('empty-state');
+  if (!currentMode) { el.innerHTML = ''; return; }
+
+  const sections = ALL_SECTIONS.filter(s => s.modes.includes(currentMode));
+  const visible = sections.filter(s => sectionToggles[s.id]);
+
+  if (visible.length === 0) {
+    el.innerHTML = '';
+    empty.classList.add('visible');
+    return;
+  }
+  empty.classList.remove('visible');
+
+  let html = '';
+  visible.forEach((s, i) => {
+    const gridClass = 'item-grid' + (s.twoCol ? ' two-col' : '');
+    html += `<div class="menu-section" id="ms-${s.id}">
+      <div class="section-header">
+        <div class="section-icon">${s.icon}</div>
+        <span class="section-title">${s.label}</span>
+        ${s.note ? `<span class="section-note">${s.note}</span>` : ''}
+      </div>
+      <div class="${gridClass}">
+        ${s.items.map(renderItem).join('')}
+      </div>
+    </div>`;
+    if (i < visible.length - 1) html += '<div class="section-divider"></div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderItem(item) {
+  const badge = item.badge
+    ? `<span class="item-badge ${item.badgeStyle||''}">${item.badge}</span>` : '';
+  return `<div class="menu-item">
+    ${item.sub ? `<div class="item-sub">${item.sub}</div>` : ''}
+    <div class="item-row">
+      <span class="item-name">${item.name}${badge}</span>
+      <span class="item-price">${item.price}</span>
+    </div>
+    <div class="item-desc">${item.desc}</div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════
+   ADMIN MODAL
+══════════════════════════════════════════════════ */
+function updateVenueHero(mode) {
+  const heroEl = document.getElementById('venue-hero');
+  const heroImg = document.getElementById('venue-hero-img');
+  const heroName = document.getElementById('venue-hero-name');
+  const heroDesc = document.getElementById('venue-hero-desc');
+  const cfg = VENUE_IMAGES[mode];
+
+  if (cfg && cfg.menuHero) {
+    heroEl.classList.add('has-image');
+    heroName.textContent = VENUE_LABELS[mode];
+    heroDesc.textContent = cfg.menuHeroDesc || '';
+    heroImg.classList.remove('loaded');
+    loadImg(heroImg, cfg.menuHero);
+  } else {
+    heroEl.classList.remove('has-image');
+  }
+}
+
+function openAdmin() {
+  // populate active location checkboxes
+  ['mule','outpost','venue'].forEach(m => {
+    const el = document.getElementById('active-' + m);
+    if (el) el.checked = !!config.activeLocations[m];
+  });
+  // populate PIN fields
+  document.getElementById('pin-admin').value = config.pins.admin;
+  document.getElementById('pin-outpost').value = config.pins.outpost;
+  document.getElementById('pin-venue').value = config.pins.venue;
+  document.getElementById('pin-mule').value = config.pins.mule;
+  // default admin section tab to first active location
+  const firstActive = ['mule','outpost','venue'].find(m => config.activeLocations[m]) || 'mule';
+  adminMode = currentMode || firstActive;
+  renderAdminSections();
+  document.querySelectorAll('.admin-mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.amode === adminMode);
+    // dim inactive location tabs
+    const isActive = config.activeLocations[b.dataset.amode];
+    b.style.opacity = isActive ? '' : '0.4';
+  });
+  document.getElementById('admin-modal').classList.remove('hidden');
+}
+
+function closeAdmin() {
+  document.getElementById('admin-modal').classList.add('hidden');
+}
+
+function setAdminMode(mode) {
+  adminMode = mode;
+  document.querySelectorAll('.admin-mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.amode === mode);
+  });
+  renderAdminSections();
+}
+
+function renderAdminSections() {
+  const el = document.getElementById('admin-section-toggles');
+  const sections = ALL_SECTIONS.filter(s => s.modes.includes(adminMode));
+  const defaults = config.sectionDefaults[adminMode] || {};
+  let html = '';
+  sections.forEach(s => {
+    const on = defaults[s.id] !== undefined ? defaults[s.id] : (s.defaultOn[adminMode] !== false);
+    html += `<div class="admin-toggle-row">
+      <input type="checkbox" id="adm-${s.id}" data-sid="${s.id}" ${on ? 'checked' : ''}>
+      <label class="admin-toggle-label" for="adm-${s.id}">${s.icon} ${s.label}</label>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function saveAdmin() {
+  // save active locations — ensure at least one stays on
+  const newActive = {};
+  ['mule','outpost','venue'].forEach(m => {
+    const el = document.getElementById('active-' + m);
+    newActive[m] = el ? el.checked : false;
+  });
+  const anyActive = Object.values(newActive).some(Boolean);
+  if (!anyActive) {
+    alert('At least one location must be active.');
+    return;
+  }
+  config.activeLocations = newActive;
+
+  // save PINs
+  const pa = document.getElementById('pin-admin').value.trim();
+  const po = document.getElementById('pin-outpost').value.trim();
+  const pv = document.getElementById('pin-venue').value.trim();
+  const pm = document.getElementById('pin-mule').value.trim();
+  if ((pa && !/^\d{4}$/.test(pa)) || (po && !/^\d{4}$/.test(po)) || (pv && !/^\d{4}$/.test(pv)) || (pm && !/^\d{4}$/.test(pm))) {
+    alert('PINs must be exactly 4 digits.');
+    return;
+  }
+  if (pa) config.pins.admin = pa;
+  if (po) config.pins.outpost = po;
+  if (pv) config.pins.venue = pv;
+  if (pm) config.pins.mule = pm;
+
+  // save section defaults for current admin tab
+  const checks = document.querySelectorAll('#admin-section-toggles input[type="checkbox"]');
+  if (!config.sectionDefaults[adminMode]) config.sectionDefaults[adminMode] = {};
+  checks.forEach(cb => {
+    config.sectionDefaults[adminMode][cb.dataset.sid] = cb.checked;
+  });
+
+  saveConfig(config);
+
+  // if current mode was just deactivated, go back to lock screen
+  if (currentMode && !config.activeLocations[currentMode]) {
+    closeAdmin();
+    lockDown();
+    document.getElementById('lock-screen').classList.remove('hidden');
+    buildLockScreen();
+    return;
+  }
+
+  // apply section changes immediately if on that mode
+  if (currentMode === adminMode) {
+    checks.forEach(cb => {
+      sectionToggles[cb.dataset.sid] = cb.checked;
+    });
+    if (!isLocked) renderControls();
+    renderMenu();
+  }
+  closeAdmin();
+}
+
+/* ══════════════════════════════════════════════════
+   INIT — always start at lock screen
+══════════════════════════════════════════════════ */
+document.getElementById('lock-screen').classList.remove('hidden');
+buildLockScreen();
+</script>
+</body>
+</html>
